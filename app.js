@@ -13,17 +13,45 @@ import { TavilySearchResults } from "@langchain/community/tools/tavily_search";
 import { AgentExecutor, createXmlAgent } from "langchain/agents";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { pull } from "langchain/hub";
+import { StringOutputParser } from "@langchain/core/output_parsers";
+import { Document } from "@langchain/core/documents";
 
 import 'dotenv/config'
 
-
 const chatModel = new ChatAnthropic({});
+await chatModel.invoke("what is LangSmith?");
+// console.log(result1);
+
+const prompt1 = ChatPromptTemplate.fromMessages([
+  ["system", "You are a world class technical documentation writer."],
+  ["user", "{input}"],
+]);
+
+const chain = prompt1.pipe(chatModel);
+
+await chain.invoke({
+  input: "what is LangSmith?",
+});
+// console.log(result1b.content);
+
+const outputParser = new StringOutputParser();
+
+const llmChain = prompt1.pipe(chatModel).pipe(outputParser);
+
+await llmChain.invoke({
+  input: "what is LangSmith?",
+});
+
+// console.log(result1c);
+// newer attempt
 
 const loader = new CheerioWebBaseLoader(
   "https://lilianweng.github.io/posts/2023-06-23-agent/"
 );
 
 const docs = await loader.load();
+// console.log(docs.length);
+// console.log(docs[0].pageContent.length);
 
 const embeddings = new VoyageEmbeddings({
   apiKey: process.env.VOYAGEAI_API_KEY, 
@@ -34,37 +62,49 @@ const splitter = new RecursiveCharacterTextSplitter();
 
 const splitDocs = await splitter.splitDocuments(docs);
 // console.log(splitDocs.length);
+// console.log(splitDocs[0].pageContent.length);
 
 const vectorstore = await MemoryVectorStore.fromDocuments(
   splitDocs,
   embeddings
 );
-// const prompt =
-//   ChatPromptTemplate.fromTemplate(`Answer the following question based only on the provided context:
 
-// <context>
-// {context}
-// </context>
+const prompt =
+  ChatPromptTemplate.fromTemplate(`Answer the following question based only on the provided context:
 
-// Question: {input}`);
+<context>
+{context}
+</context>
 
-// const documentChain = await createStuffDocumentsChain({
-//   llm: chatModel,
-//   prompt,
-// });
+Question: {input}`);
 
+const documentChain = await createStuffDocumentsChain({
+  llm: chatModel,
+  prompt,
+});
+
+await documentChain.invoke({
+  input: "what is LangSmith?",
+  context: [
+    new Document({
+      pageContent:
+        "LangSmith is a platform for building production-grade LLM applications.",
+    }),
+  ],
+});
+
+// console.log(reply)
 
 const retriever = vectorstore.asRetriever();
 
-// const retrievalChain = await createRetrievalChain({
-//   combineDocsChain: documentChain,
-//   retriever,
-// });
+const retrievalChain = await createRetrievalChain({
+  combineDocsChain: documentChain,
+  retriever,
+});
 
-// const result = await retrievalChain.invoke({
-//   input: "what is LangSmith?",
-// });
-
+await retrievalChain.invoke({
+  input: "what is LangSmith?",
+});
 // console.log(result.answer);
 
 const historyAwarePrompt = ChatPromptTemplate.fromMessages([
@@ -91,6 +131,7 @@ await historyAwareRetrieverChain.invoke({
   chat_history: chatHistory,
   input: "Tell me how!",
 });
+// console.log(reply)
 
 const historyAwareRetrievalPrompt = ChatPromptTemplate.fromMessages([
   [
@@ -120,45 +161,3 @@ const result2 = await conversationalRetrievalChain.invoke({
 });
 
 console.log(result2.answer);
-
-// throwing error
-// const retrieverTool = await createRetrieverTool(retriever, {
-//   name: "langsmith_search",
-//   description:
-//     "Search for information about LangSmith. For any questions about LangSmith, you must use this tool!",
-// });
-
-// const tavilyApiKey = process.env.TAVILY_API_KEY
-
-// const tools = [new TavilySearchResults({ maxResults: 1 })];
-
-
-// Get the prompt to use - you can modify this!
-// If you want to see the prompt in full, you can at:
-// https://smith.langchain.com/hub/hwchase17/xml-agent-convo
-
-// const prompt =
-//   ChatPromptTemplate.fromTemplate(`Answer the following question based only on the provided context:
-
-// const prompt = await pull<PromptTemplate>("hwchase17/xml-agent-convo");
-
-// const llm = new ChatAnthropic({
-//   temperature: 0,
-// });
-
-// const agent = await createXmlAgent({
-//   llm,
-//   tools,
-//   prompt
-// });
-
-// const agentExecutor = new AgentExecutor({
-//   agent,
-//   tools,
-// });
-
-// const result3 = await agentExecutor.invoke({
-//   input: "what is LangChain?",
-// });
-
-// console.log(result3);
