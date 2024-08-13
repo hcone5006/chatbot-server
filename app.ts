@@ -4,6 +4,11 @@ import { AIMessage } from "@langchain/core/messages";
 import { InMemoryChatMessageHistory } from "@langchain/core/chat_history";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { RunnableWithMessageHistory } from "@langchain/core/runnables"
+import type { BaseMessage } from "@langchain/core/messages";
+import {
+  RunnablePassthrough,
+  RunnableSequence,
+} from "@langchain/core/runnables";
 
 const model = new ChatAnthropic({
   model: "claude-3-5-sonnet-20240620",
@@ -18,7 +23,7 @@ await model.invoke([
 // console.log(reply.content)
 
 
-const messageHistories: Record<string, InMemoryChatMessageHistory> = {};
+// const messageHistories: Record<string, InMemoryChatMessageHistory> = {};
 
 const prompt = ChatPromptTemplate.fromMessages([
   [
@@ -31,72 +36,176 @@ const prompt = ChatPromptTemplate.fromMessages([
 
 const chain = prompt.pipe(model);
 
-const withMessageHistory = new RunnableWithMessageHistory({
+// const withMessageHistory = new RunnableWithMessageHistory({
+//   runnable: chain,
+//   getMessageHistory: async (sessionId) => {
+//     if (messageHistories[sessionId] === undefined) {
+//       messageHistories[sessionId] = new InMemoryChatMessageHistory();
+//     }
+//     return messageHistories[sessionId];
+//   },
+//   inputMessagesKey: "input",
+//   historyMessagesKey: "chat_history",
+// });
+
+// const config = {
+//   configurable: {
+//     sessionId: "abc2",
+//   },
+// };
+
+// const response = await withMessageHistory.invoke(
+//   {
+//     input: "Hi! I'm Bob",
+//   },
+//   config
+// );
+
+// response.content;
+// console.log(response.content)
+
+// const followupResponse = await withMessageHistory.invoke(
+//   {
+//     input: "What's my name?",
+//   },
+//   config
+// );
+
+// followupResponse.content;
+// console.log(followupResponse.content)
+
+// const config2 = {
+//   configurable: {
+//     sessionId: "abc3",
+//   },
+// };
+
+// const response2 = await withMessageHistory.invoke(
+//   {
+//     input: "What's my name?",
+//   },
+//   config2
+// );
+
+// response2.content;
+// console.log(response2.content)
+
+// const config3 = {
+//   configurable: {
+//     sessionId: "abc2",
+//   },
+// };
+
+// const response3 = await withMessageHistory.invoke(
+//   {
+//     input: "What's my name?",
+//   },
+//   config3
+// );
+
+// response3.content;
+// console.log(response3.content)
+
+// type ChainInput = {
+//   chat_history: BaseMessage[];
+//   input: string;
+// };
+
+// const filterMessages = (input: ChainInput) => input.chat_history.slice(-10);
+
+// const chain2 = RunnableSequence.from<ChainInput>([
+//   RunnablePassthrough.assign({
+//     chat_history: filterMessages,
+//   }),
+//   prompt,
+//   model,
+// ]);
+
+const messages = [
+  new HumanMessage({ content: "hi! I'm bob" }),
+  new AIMessage({ content: "hi!" }),
+  new HumanMessage({ content: "I like vanilla ice cream" }),
+  new AIMessage({ content: "nice" }),
+  new HumanMessage({ content: "whats 2 + 2" }),
+  new AIMessage({ content: "4" }),
+  new HumanMessage({ content: "thanks" }),
+  new AIMessage({ content: "No problem!" }),
+  new HumanMessage({ content: "having fun?" }),
+  new AIMessage({ content: "yes!" }),
+  new HumanMessage({ content: "That's great!" }),
+  new AIMessage({ content: "yes it is!" }),
+];
+
+// const response4 = await chain2.invoke({
+//   chat_history: messages,
+//   input: "what's my name?",
+// });
+// response4.content;
+// console.log(response4.content)
+
+// const response5 = await chain2.invoke({
+//   chat_history: messages,
+//   input: "what's my fav ice cream",
+// });
+// response5.content;
+// console.log(response5.content)
+
+
+const messageHistories2: Record<string, InMemoryChatMessageHistory> = {};
+
+const withMessageHistory2 = new RunnableWithMessageHistory({
   runnable: chain,
   getMessageHistory: async (sessionId) => {
-    if (messageHistories[sessionId] === undefined) {
-      messageHistories[sessionId] = new InMemoryChatMessageHistory();
+    if (messageHistories2[sessionId] === undefined) {
+      const messageHistory = new InMemoryChatMessageHistory();
+      await messageHistory.addMessages(messages);
+      messageHistories2[sessionId] = messageHistory;
     }
-    return messageHistories[sessionId];
+    return messageHistories2[sessionId];
   },
   inputMessagesKey: "input",
   historyMessagesKey: "chat_history",
 });
 
-const config = {
+const config4 = {
   configurable: {
-    sessionId: "abc2",
+    sessionId: "abc4",
   },
 };
 
-const response = await withMessageHistory.invoke(
+const response7 = await withMessageHistory2.invoke(
   {
-    input: "Hi! I'm Bob",
+    input: "whats my name?",
   },
-  config
+  config4
 );
 
-response.content;
-// console.log(response.content)
+response7.content;
+// console.log(response7.content)
 
-const followupResponse = await withMessageHistory.invoke(
+const response8 = await withMessageHistory2.invoke(
   {
-    input: "What's my name?",
+    input: "whats my favorite ice cream?",
   },
-  config
+  config4
 );
 
-followupResponse.content;
-// console.log(followupResponse.content)
+response8.content;
+// console.log(response8.content)
 
-const config2 = {
+const config5 = {
   configurable: {
-    sessionId: "abc3",
+    sessionId: "abc6",
   },
 };
 
-const response2 = await withMessageHistory.invoke(
+const stream = await withMessageHistory2.stream(
   {
-    input: "What's my name?",
+    input: "hi! I'm todd. tell me a joke",
   },
-  config2
+  config5
 );
 
-response2.content;
-// console.log(response2.content)
-
-const config3 = {
-  configurable: {
-    sessionId: "abc2",
-  },
-};
-
-const response3 = await withMessageHistory.invoke(
-  {
-    input: "What's my name?",
-  },
-  config3
-);
-
-response3.content;
-console.log(response3.content)
+for await (const chunk of stream) {
+  console.log("|", chunk.content);
+}
