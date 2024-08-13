@@ -57,4 +57,46 @@ const response = await withMessageHistory.invoke(
 );
 
 response.content;
-console.log(response.content)
+// console.log(response.content)
+
+const followupResponse = await withMessageHistory.invoke(
+  {
+    input: "What's my name?",
+  },
+  config
+);
+
+followupResponse.content;
+// console.log(followupResponse.content)
+
+const config2 = {
+  configurable: {
+    sessionId: "abc3",
+  },
+};
+
+const response2 = await withMessageHistory.invoke(
+  {
+    input: "What's my name?",
+  },
+  config2
+);
+
+response2.content;
+// console.log(response2.content)
+
+const config3 = {
+  configurable: {
+    sessionId: "abc2",
+  },
+};
+
+const response3 = await withMessageHistory.invoke(
+  {
+    input: "What's my name?",
+  },
+  config3
+);
+
+response3.content;
+console.log(response3.content)
